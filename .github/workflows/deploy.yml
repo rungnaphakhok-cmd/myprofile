@@ -1,36 +1,40 @@
-name: Deploy Static Website to GitHub Pages
+name: Deploy GitHub Pages
 
-# 1. กำหนด Trigger: ให้ทำงานเมื่อมีการ Push โค้ดลง Branch main
 on:
   push:
     branches:
-      - main
+      - main  # หรือ master ขึ้นอยู่กับชื่อ Branch หลักของคุณ
 
-# 2. กำหนดสิทธิ์ของระบบใน Repository
+# กำหนดสิทธิ์ให้ Workflow สามารถ Deploy ลง GitHub Pages ได้
 permissions:
   contents: read
   pages: write
   id-token: write
 
-# 3. กำหนดภาระงาน (Job)
+# อนุญาตให้รัน Concurrent Deployment ได้ครั้งละ 1 งาน
+concurrency:
+  group: "pages"
+  cancel-in-progress: true
+
 jobs:
-  build-and-deploy:
-    runs-on: ubuntu-latest # สั่งเปิด Cloud VM ระบบ Ubuntu
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
     steps:
-      # ขั้นตอนที่ A: ดึงโค้ดล่าสุดจาก Repository มาลงเครื่อง VM
-      - name: Checkout Code
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      # ขั้นตอนที่ B: ตั้งค่าสภาพแวดล้อม GitHub Pages
       - name: Setup Pages
-        uses: actions/configure-pages@v4
+        uses: actions/configure-pages@v5
 
-      # ขั้นตอนที่ C: รวบรวมไฟล์สำหรับ Deploy
-      - name: Upload Artifact
+      - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: '.' # เลือกไฟล์ทั้งหมดใน Root Directory
+          # ระบุ Folder ที่เก็บไฟล์ index.html (ใช้ '.' หากอยู่ที่ Root Directory)
+          path: '.'
 
-      # ขั้นตอนที่ D: นำไฟล์ไป Deploy ขึ้น Cloud Server
       - name: Deploy to GitHub Pages
+        id: deployment
         uses: actions/deploy-pages@v4
